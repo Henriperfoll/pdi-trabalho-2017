@@ -17,32 +17,33 @@ def compute_feats(image, kernels):
     feats = np.zeros((len(kernels), 2), dtype=np.double)
     for k, kernel in enumerate(kernels):
         filtered = ndi.convolve(image, kernel, mode='wrap')
-        feats[k, 0] = filtered.mean()
-        feats[k, 1] = filtered.var()
     return filtered
+
+def extract_gabor_features(image):
+    gabor = compute_feats(image, kernels)
+
+    (hist, _) = np.histogram(gabor.ravel(),bins=np.arange(0,11),range=(0,10))
+    hist = hist.astype("float")
+    hist /= (hist.sum() + 1e-7)
+    return hist
 
 # prepare filter bank kernels
 kernels = []
-for theta in range(6):
-    theta = theta / 6. * np.pi
+for theta in range(4):
+    theta = theta / 8. * np.pi
     for sigma in (1, 3):
-        for frequency in (0.05, 0.35):
+        for frequency in (0.05, 0.1):
             kernel = np.real(gabor_kernel(frequency, theta=theta,sigma_x=sigma, sigma_y=sigma))
             kernels.append(kernel)
 
 classes = []
 features = []
 
-for filename in glob.glob(os.path.join('practice/*')):
+for filename in glob.glob(os.path.join('../practice/*')):
 	aux = io.imread(filename)
 	filename = os.path.basename(filename)
 	classes.append(filename.split("_")[0])
-	gabor_item = compute_feats(aux, kernels)
-	(hist, _) = np.histogram(gabor_item.ravel(),bins=np.arange(0,11),range=(0,10))
-    # normalize the histogram
-        hist = hist.astype("float")
-        hist /= (hist.sum() + 1e-7)
-        features.append(hist)
+	features.append(extract_gabor_features(aux))
 
 
 model = KNeighborsClassifier(n_neighbors=5)
@@ -51,16 +52,11 @@ model.fit(features,classes)
 classes = []
 features = []
 
-for filename in glob.glob(os.path.join('practice/*')):
+for filename in glob.glob(os.path.join('../test/*')):
 	aux = io.imread(filename)
 	filename = os.path.basename(filename)
 	classes.append(filename.split("_")[0])
-	gabor_item = compute_feats(aux, kernels)
-	(hist, _) = np.histogram(gabor_item.ravel(),bins=np.arange(0,11),range=(0,10))
-    # normalize the histogram
-        hist = hist.astype("float")
-        hist /= (hist.sum() + 1e-7)
-	features.append(hist)
+	features.append(extract_gabor_features(aux))
 
 prediction = model.predict(features)
 

@@ -2,51 +2,48 @@ import numpy as np
 from skimage import io
 import os
 import glob
-from skimage.feature import local_binary_pattern
 import matplotlib.pyplot as plt
-from skimage.color import label2rgb
+from skimage.feature import local_binary_pattern
 from sklearn import svm
 from sklearn import metrics
 
-images = []
-label =  []
-lbp = []
-radius = 2
-n_points = 24 * radius
-eps = 1e-7
-
-for filename in glob.glob(os.path.join('practice/*')):
-	aux = io.imread(filename)
-	images.append(aux)
-	filename = os.path.basename(filename)
-	label.append(filename.split("_")[0])
-	lbp_item = local_binary_pattern(aux,n_points, radius, 'uniform')
-	(hist, _) = np.histogram(lbp_item.ravel(),bins=np.arange(0, n_points + 3),range=(0, n_points + 2))
+def extract_lbp_features(image):
+	#raio do lbp
+	radius = 2
+	#quantidade de pontos no raio
+	n_points = 10 * radius
+	lbp = local_binary_pattern(image,n_points, radius, 'uniform')
+	(hist, _) = np.histogram(lbp.ravel(),bins=np.arange(0, n_points + 3),range=(0, n_points + 2))
 	# normalize the histogram
+	eps = 1e-7
 	hist = hist.astype("float")
 	hist /= (hist.sum() + eps)
-	lbp.append(hist)
+	return hist
+
+classes =  []
+features = []
+
+for filename in glob.glob(os.path.join('../practice/*')):
+	aux = io.imread(filename)
+	filename = os.path.basename(filename)
+	classes.append(filename.split("_")[0])
+	features.append(extract_lbp_features(aux))
 
 # print images[0]
 model = svm.LinearSVC(C=100.0, random_state=42)
 model.fit(lbp,label)
 
-label =  []
-lbp = []
+classes =  []
+features = []
 
-for filename in glob.glob(os.path.join('test/*')):
+for filename in glob.glob(os.path.join('../test/*')):
 	aux = io.imread(filename)
 	images.append(aux)
 	filename = os.path.basename(filename)
-	label.append(filename.split("_")[0])
-	lbp_item = local_binary_pattern(aux, n_points, radius, 'uniform')
-	(hist, _) = np.histogram(lbp_item.ravel(),bins=np.arange(0, n_points + 3),range=(0, n_points + 2))
-	# normalize the histogram
-	hist = hist.astype("float")
-	hist /= (hist.sum() + eps)
-	lbp.append(hist)
+	classes.append(filename.split("_")[0])
+	features.append(extract_lbp_features(aux))
 
-prediction = model.predict(lbp)
+prediction = model.predict(features)
 
-print metrics.classification_report(label,prediction)
-print metrics.confusion_matrix(label,prediction)
+print metrics.classification_report(classes,prediction)
+print metrics.confusion_matrix(classes,prediction)
