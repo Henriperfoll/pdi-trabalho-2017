@@ -28,10 +28,17 @@ def extract_gabor_features(image):
 
 # prepare filter bank kernels
 kernels = []
-for theta in range(5):
-    theta = theta / 10. * np.pi
+for theta in range(4):
+    theta = theta / 8. * np.pi
+    print "theta "
+    print theta
     for sigma in (1, 3):
+        print "sigma "
+        print sigma
         for frequency in (0.05, 0.15):
+            print "frequency "
+            print frequency
+            
             kernel = np.real(gabor_kernel(frequency, theta=theta,sigma_x=sigma, sigma_y=sigma))
             kernels.append(kernel)
 
